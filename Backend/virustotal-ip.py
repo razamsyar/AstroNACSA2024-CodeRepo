@@ -1,13 +1,13 @@
 import requests
 
-print("Enter IP:")
+print("Enter the IP to check: ")
 ip_add = input()
 
 
 url = f"https://www.virustotal.com/api/v3/ip_addresses/{ip_add}"
 headers = {
     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0",
-    "x-apikey": "b221c495a4e5654c82fbc7928804bf665d0b04d1ece9818e453c92fe8f5664a6"
+    "x-apikey": "7f7fe9f967c41cc8c382dc4f7b7b4f33c1940e84ea205570f7adde9f5e6931a9"
 }
 r = requests.get(url, headers=headers).json()
 dict_web = r["data"]["attributes"]["last_analysis_results"]
