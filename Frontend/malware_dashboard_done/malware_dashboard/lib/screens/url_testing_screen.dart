@@ -1,0 +1,117 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class UrlTestingScreen extends StatefulWidget {
+  const UrlTestingScreen({super.key});
+
+  @override
+  _UrlTestingScreenState createState() => _UrlTestingScreenState();
+}
+
+class _UrlTestingScreenState extends State<UrlTestingScreen> {
+  final _urlController = TextEditingController();
+  String _result = '';
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  void _testUrl() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _result = 'Please enter a URL.';
+        });
+      }
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://127.0.0.1:5000/api?url=$url'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            if (data.containsKey('error')) {
+              _result = data['error'];
+            } else {
+              _result = 'Malicious: ${data['malicious']}, Undetected: ${data['undetected']}, Harmless: ${data['harmless']}, Suspicious: ${data['suspicious']}, Timeout: ${data['timeout']}';
+            }
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _result = 'Error: ${response.statusCode}';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _result = 'Connection error: $e';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('URL Testing'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Enter a URL to test:',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: 300,
+                child: TextField(
+                  controller: _urlController,
+                  decoration: const InputDecoration(
+                    labelText: 'URL',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _testUrl,
+                child: const Text('Test'),
+              ),
+               const SizedBox(height: 20),
+              Container(
+                width: 500,
+                height: 300, // Adjust the height as needed
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(_result),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

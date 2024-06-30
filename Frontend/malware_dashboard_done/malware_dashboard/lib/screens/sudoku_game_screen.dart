@@ -1,0 +1,248 @@
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+void main() => runApp(const SudokuApp());
+
+class SudokuApp extends StatelessWidget {
+  const SudokuApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      title: 'Sudoku',
+      home: SudokuGameScreen(),
+    );
+  }
+}
+
+class SudokuGameScreen extends StatefulWidget {
+  const SudokuGameScreen({super.key});
+
+  @override
+  _SudokuGameScreenState createState() => _SudokuGameScreenState();
+}
+
+class _SudokuGameScreenState extends State<SudokuGameScreen> {
+  List<List<int>> _puzzle = [];
+  List<List<int>> _solution = [];
+  int _selectedRow = -1;
+  int _selectedCol = -1;
+  bool _isComplete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _generatePuzzle();
+  }
+
+  void _generatePuzzle() {
+    _solution = _generateSolution();
+    _puzzle = List.generate(9, (_) => List.generate(9, (_) => 0));
+
+    // Fill the puzzle with more pre-filled cells
+    var rng = Random();
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        if (rng.nextDouble() < 0.7) {  // Increase the probability to make it easier
+          _puzzle[i][j] = _solution[i][j];
+        }
+      }
+    }
+  }
+
+  List<List<int>> _generateSolution() {
+    List<List<int>> solution = List.generate(9, (_) => List.generate(9, (_) => 0));
+    _fillSolution(solution);
+    return solution;
+  }
+
+  bool _fillSolution(List<List<int>> solution) {
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        if (solution[i][j] == 0) {
+          List<int> numbers = List.generate(9, (index) => index + 1)..shuffle();
+          for (int number in numbers) {
+            if (_isValidNumber(solution, i, j, number)) {
+              solution[i][j] = number;
+              if (_fillSolution(solution)) {
+                return true;
+              }
+              solution[i][j] = 0;
+            }
+          }
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  bool _isValidNumber(List<List<int>> board, int row, int col, int number) {
+    for (int i = 0; i < 9; i++) {
+      if (board[row][i] == number || board[i][col] == number || board[row - row % 3 + i ~/ 3][col - col % 3 + i % 3] == number) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _checkComplete() {
+    _isComplete = true;
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        if (_puzzle[i][j] == 0) {
+          _isComplete = false;
+          return;
+        }
+        if (_puzzle[i][j] != _solution[i][j]) {
+          _isComplete = false;
+        }
+      }
+    }
+  }
+
+  void _selectCell(int row, int col) {
+    setState(() {
+      _selectedRow = row;
+      _selectedCol = col;
+    });
+  }
+
+  void _enterNumber(int number) {
+    if (_selectedRow != -1 && _selectedCol != -1) {
+      setState(() {
+        _puzzle[_selectedRow][_selectedCol] = number;
+        _checkComplete();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sudoku'),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Center(
+            child: Container(
+              width: 360, // Set the width of the grid
+              height: 360, // Set the height of the grid
+              child: GridView.count(
+                crossAxisCount: 9,
+                children: List.generate(81, (index) {
+                  int row = index ~/ 9;
+                  int col = index % 9;
+                  return GestureDetector(
+                    onTap: () {
+                      _selectCell(row, col);
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.grey,
+                          width: 0.5,
+                        ),
+                        color: _selectedRow == row && _selectedCol == col
+                            ? Colors.yellow
+                            : Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular((row % 3 == 0 && col % 3 == 0) ? 12 : 0),
+                          topRight: Radius.circular((row % 3 == 0 && col % 3 == 2) ? 12 : 0),
+                          bottomLeft: Radius.circular((row % 3 == 2 && col % 3 == 0) ? 12 : 0),
+                          bottomRight: Radius.circular((row % 3 == 2 && col % 3 == 2) ? 12 : 0),
+                        ),
+                      ),
+                      child: Text(
+                        _puzzle[row][col] == 0 ? '' : _puzzle[row][col].toString(),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: _puzzle[row][col] == _solution[row][col]
+                              ? Colors.green
+                              : Colors.black,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _isComplete
+              ? const Text(
+                  'Congratulations! You solved the sudoku!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                )
+              : const SizedBox(),
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              width: 360, // Set the width of the number button rows to match the grid
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      _buildNumberButton(1),
+                      _buildNumberButton(2),
+                      _buildNumberButton(3),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      _buildNumberButton(4),
+                      _buildNumberButton(5),
+                      _buildNumberButton(6),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      _buildNumberButton(7),
+                      _buildNumberButton(8),
+                      _buildNumberButton(9),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            child: const Text('New Game'),
+            onPressed: () {
+              setState(() {
+                _generatePuzzle();
+                _selectedRow = -1;
+                _selectedCol = -1;
+                _isComplete = false;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberButton(int number) {
+    return ElevatedButton(
+      child: Text(number.toString()),
+      onPressed: () {
+        _enterNumber(number);
+      },
+    );
+  }
+}
