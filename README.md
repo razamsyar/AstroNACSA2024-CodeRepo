@@ -4,8 +4,8 @@ This repository contains the code submissions and projects developed for the Ast
 Group: lyjYYDS
 
 Members:
-Harraz Amsyar Khairul Amin
-Koy Chang Wei
-Goh Hong Xuan
-Lee Yung Jie
-Lim Jia Shin
+1) Harraz Amsyar Khairul Amin
+2) Koy Chang Wei
+3) Goh Hong Xuan
+4) Lee Yung Jie
+5) Lim Jia Shin
